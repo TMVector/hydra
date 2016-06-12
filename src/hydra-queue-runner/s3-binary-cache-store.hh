@@ -25,8 +25,6 @@ public:
 
     void init() override;
 
-    std::string getUri();
-
     struct Stats
     {
         std::atomic<uint64_t> put{0};
@@ -40,7 +38,7 @@ public:
 
     const Stats & getS3Stats();
 
-    bool isValidPathUncached(const Path & storePath) override;
+    bool isValidPath(const Path & storePath) override;
 
 private:
 
@@ -54,7 +52,7 @@ protected:
 
     void upsertFile(const std::string & path, const std::string & data) override;
 
-    std::shared_ptr<std::string> getFile(const std::string & path) override;
+    std::string getFile(const std::string & path) override;
 
 };
 
