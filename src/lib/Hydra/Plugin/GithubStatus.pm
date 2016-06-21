@@ -6,6 +6,7 @@ use HTTP::Request;
 use JSON;
 use LWP::UserAgent;
 use Hydra::Helper::CatalystUtils;
+use Data::Dump;
 
 sub toGithubState {
     my ($buildStatus) = @_;
@@ -34,12 +35,11 @@ sub common {
             next unless $jobName =~ /^$conf->{jobs}$/;
 
             my $contextTrailer = $conf->{excludeBuildFromContext} ? "" : (":" . $b->id);
+            my $link = "$baseurl/build/" . $b->id;
             my $body = encode_json(
                 {
-                    state => $finished ? toGithubState($b->buildstatus) : "pending",
-                    target_url => "$baseurl/build/" . $b->id,
-                    description => "Hydra build #" . $b->id . " of $jobName",
-                    context => "continuous-integration/hydra:" . $jobName . $contextTrailer
+                    body => "Hydra build #" . $b->id . " of $jobName:\n## " . ($finished ? toGithubState($b->buildstatus) : "pending") . "\n\n" .
+                            "Build at [$link]($link)"
                 });
             my $inputs_cfg = $conf->{inputs};
             my @inputs = defined $inputs_cfg ? ref $inputs_cfg eq "ARRAY" ? @$inputs_cfg : ($inputs_cfg) : ();
@@ -54,11 +54,12 @@ sub common {
                     next if exists $seen{$input}->{$key};
                     $seen{$input}->{$key} = 1;
                     $uri =~ m![:/]([^/]+)/([^/]+?)(?:.git)?$!;
-                    my $req = HTTP::Request->new('POST', "https://api.github.com/repos/$1/$2/statuses/$rev");
+                    my $req = HTTP::Request->new('POST', "https://api.github.com/repos/$1/$2/commits/$rev/comments");
                     $req->header('Content-Type' => 'application/json');
                     $req->header('Accept' => 'application/vnd.github.v3+json');
                     $req->header('Authorization' => $conf->{authorization});
                     $req->content($body);
+                    print STDERR "DEBUG: github status req: ", Data::Dump::dump($req), "\n";
                     my $res = $ua->request($req);
                     print STDERR $res->status_line, ": ", $res->decoded_content, "\n" unless $res->is_success;
                 }
