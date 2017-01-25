@@ -27,6 +27,7 @@ sub common {
     # Find matching configs
     foreach my $b ($build, @{$dependents}) {
         my $jobName = showJobName $b;
+        my $attrName = $jobName =~ s/.*://r;
         my $evals = $build->jobsetevals;
         my $ua = LWP::UserAgent->new();
 
@@ -39,7 +40,7 @@ sub common {
                     state => $finished ? toGithubState($b->buildstatus) : "pending",
                     target_url => "$baseurl/build/" . $b->id,
                     description => "Hydra build #" . $b->id . " of $jobName",
-                    context => "continuous-integration/hydra:" . $jobName . $contextTrailer
+                    context => $attrName
                 });
             my $inputs_cfg = $conf->{inputs};
             my @inputs = defined $inputs_cfg ? ref $inputs_cfg eq "ARRAY" ? @$inputs_cfg : ($inputs_cfg) : ();
