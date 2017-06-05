@@ -89,9 +89,11 @@ system_time State::doDispatch()
         {
             Machine::ptr machine;
             unsigned long currentJobs;
+            unsigned rand;
         };
         std::vector<MachineInfo> machinesSorted;
         {
+            std::default_random_engine gen;
             auto machines_(machines.lock());
             for (auto & m : *machines_) {
                 auto info(m.second->state->connectInfo.lock());
@@ -101,7 +103,7 @@ system_time State::doDispatch()
                         sleepUntil = info->disabledUntil;
                     continue;
                 }
-                machinesSorted.push_back({m.second, m.second->state->currentJobs});
+                machinesSorted.push_back({m.second, m.second->state->currentJobs, gen()});
             }
         }
 
@@ -115,16 +117,21 @@ system_time State::doDispatch()
 
            - Then by speed factor.
 
-           - Finally by load. */
-        sort(machinesSorted.begin(), machinesSorted.end(),
+           - Then by load.
+
+           - Finally by a random value to help ensure a fair
+             distribution */
+        std::shuffle(std::begin(machinesSorted), std::end(machinesSorted), std::default_random_engine{});
+        stable_sort(machinesSorted.begin(), machinesSorted.end(),
             [](const MachineInfo & a, const MachineInfo & b) -> bool
             {
-                float ta = roundf(a.currentJobs / a.machine->speedFactor);
-                float tb = roundf(b.currentJobs / b.machine->speedFactor);
+                const float ta = a.currentJobs / a.machine->speedFactor;
+                const float tb = b.currentJobs / b.machine->speedFactor;
                 return
                     ta != tb ? ta < tb :
                     a.machine->speedFactor != b.machine->speedFactor ? a.machine->speedFactor > b.machine->speedFactor :
-                    a.currentJobs > b.currentJobs;
+                    a.currentJobs != b.currentJobs ? a.currentJobs > b.currentJobs :
+                    a.rand < b.rand;
             });
 
         /* Sort the runnable steps by priority. Priority is establised
