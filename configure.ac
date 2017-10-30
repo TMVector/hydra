@@ -11,7 +11,7 @@ AC_PROG_LN_S
 AC_PROG_LIBTOOL
 AC_PROG_CXX
 
-CXXFLAGS+=" -std=c++11"
+CXXFLAGS+=" -std=c++1y"
 
 AC_PATH_PROG([XSLTPROC], [xsltproc])
 
