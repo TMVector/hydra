@@ -56,7 +56,8 @@ sub common {
                     next if exists $seen{$input}->{$key};
                     $seen{$input}->{$key} = 1;
                     $uri =~ m![:/]([^/]+)/([^/]+?)(?:.git)?$!;
-                    if ($githubState eq "error" || $githubState eq "failure") {
+                    if ($githubState eq "error" || $githubState eq "failure" || $attrName eq "everything" || $attrName eq "lint") {
+                        print STDERR "DEBUG: sending \"$githubState\" \"$attrName\"\n";
                         my $req = HTTP::Request->new('POST', "https://api.github.com/repos/$1/$2/statuses/$rev");
                         $req->header('Content-Type' => 'application/json');
                         $req->header('Accept' => 'application/vnd.github.v3+json');
